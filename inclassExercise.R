@@ -1,0 +1,73 @@
+cname<-file.path("C:/Users/takedatn/Documents/R/BIOcause_corpus/Biocause_corpus")
+
+setwd("~/Bio_cause_clas")
+install.packages("tm")
+library(tm)
+docs<-Corpus(DirSource(cname))
+inspect(docs[5])
+as.character(docs[[50]])
+docs <- tm_map(docs, content_transformer(tolower))
+stopwords("English")
+docs <- tm_map(docs, removeWords, stopwords("english"))
+word_list<-stopwords("english")[-75]
+docs <- tm_map(docs, stemDocument)
+install.packages("SnowballC")
+library(SnowballC)
+docs
+removeFigs <- function(x) gsub("\\(fig.? [0-9][a-z]?\\)", "", x)
+docs <- tm_map(docs, removePunctuation)
+docs <- tm_map(docs, removeNumbers)
+docs <- tm_map(docs, stripWhitespace)
+dtm <- DocumentTermMatrix(docs)
+dtm
+inspect(dtm[1:25, c(6, 750, 4303)])
+freq <- colSums(as.matrix(dtm))
+head(freq)
+ord <- order(freq, decreasing = TRUE)
+freq[head(ord, n = 10)]
+head(ord)
+findFreqTerms(dtm, 100)
+findFreqTerms(dtm, lowfreq = 25, highfreq = 30)
+install.packages("wordcloud")
+library(wordcloud)
+set.seed(10)
+wordcloud(names(freq), freq, min.freq = 100, colors = brewer.pal(8,"Spectral"))
+install.packages("ggplot2")
+library(ggplot2)
+wf <- data.frame(word = names(freq), freq = freq)
+p <- ggplot(subset(wf, freq > 140), aes(x = word, y = freq))+geom_bar(stat = "identity")
+p
+p <- p + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p
+dtm.tfidf <- DocumentTermMatrix(docs, control = list(weighting = weightTfIdf))
+inspect(dtm.tfidf[1:25, c(6, 750, 4303)])
+findAssocs(dtm, "cytotoxin", 0.8)
+findAssocs(dtm, "pmrb", 0.7)
+dtms <- removeSparseTerms(dtm, 0.75)
+dtms
+library(cluster)
+d <- dist(t(dtms), method = "euclidian")
+fit <- hclust(d = d, method = "ward.D")
+fit
+
+plot(fit)
+
+set.seed(10)
+docset
+d <- dist((dtm[docset, ]), method = "euclidian")
+fit <- hclust(d, method = "ward.D")
+print(plot(fit, cex = 0.6))
+install.packages("ape")
+library(ape)
+plot(as.phylo(fit))
+m <- as.matrix(dtm)
+k2 <- kmeans(m, centers = 2)
+install.packages("useful")
+library(useful)
+plot(k2, data = m)
+19
+table(k2$cluster)
+clusters2 <- as.data.frame(cbind(m[1], cluster = k2$cluster))
+tail(clusters2, n = 40)
+k5 <- kmeans(m, centers = 5)
+plot(k5, data = m)
